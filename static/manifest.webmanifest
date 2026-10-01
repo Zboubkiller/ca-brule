@@ -1,0 +1,15 @@
+{
+  "name": "ça brûle — carte des manifestations",
+  "short_name": "ça brûle",
+  "description": "Carte en direct des manifestations, grèves et blocages en France, ville par ville.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f1114",
+  "theme_color": "#0f1114",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"}
+  ]
+}

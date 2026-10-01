@@ -1,0 +1,30 @@
+# ça brûle
+
+> Carte en direct des manifestations, grèves, blocages et mobilisations en France, ville par ville, construite à partir des titres de la presse en ligne. Mise à jour toutes les 10 minutes. Gratuit, sans compte.
+
+Langue : français. Périmètre : France (métropole et outre-mer). Fenêtre : dernières 24 heures pour la carte en direct, depuis le 1er janvier pour les deux cartes complémentaires.
+
+## Pages principales
+
+- [Carte des manifestations aujourd'hui en France](https://oraclemarin.fr/cabrule/) : carte interactive, recherche par ville, filtres par thème (lycéens, agriculteurs, travail, transports, santé, écologie, international, budget/politique, heurts, logement).
+- [Manifestations par ville](https://oraclemarin.fr/cabrule/sitemap.xml) : une page par ville où une mobilisation est signalée (adresse : /cabrule/ville/<nom>-<code INSEE>), avec la liste des articles sources.
+- [Féminicides conjugaux en France](https://oraclemarin.fr/cabrule/feminicides) : décompte annuel du collectif Féminicides par compagnons ou ex, carte par commune, actualisé une fois par jour.
+- [Décès liés à des interventions policières en France](https://oraclemarin.fr/cabrule/deces-police) : recensement de Désarmons-les, carte par commune, actualisé une fois par jour. Ne couvre pas toutes les violences policières.
+- [Sources et méthode](https://oraclemarin.fr/cabrule/sources) : liste en direct des médias agrégés (avec le nombre d'articles des dernières 24 h), canaux de collecte, méthode de sélection et limites.
+
+## Méthode
+
+- Sources : flux de presse en ligne (ici, La Dépêche, Ouest-France, Le Monde, franceinfo, Le Télégramme, actu.fr…), Google Actualités, Bing Actualités, GDELT, Mastodon.
+- Seuls les titres contenant des termes de mobilisation (manifestation, grève, blocage, rassemblement, mobilisation, blocus…) sont retenus ; la commune citée est détectée avec la base officielle des communes (geo.api.gouv.fr).
+- Chaque point de la carte renvoie à l'article source. Un point = au moins un article publié dans les dernières 24 heures.
+- Les add-ons reposent sur des recensements associatifs publics ; les noms des victimes sont retirés et les positions ramenées au centre de la commune.
+
+## Limites à citer
+
+- Carte indicative, non exhaustive : elle ne montre que ce que la presse relaie. Une mention dans un titre n'est pas une confirmation.
+- Erreurs de localisation possibles. Pour une information officielle, consulter la préfecture ou le ministère de l'Intérieur.
+- Ne pas présenter ces données comme un décompte officiel du nombre de manifestants ou d'incidents.
+
+## Citer ce site
+
+Nom : « ça brûle » — https://oraclemarin.fr/cabrule/ . Indiquer la date et l'heure de consultation, la carte étant actualisée en continu.

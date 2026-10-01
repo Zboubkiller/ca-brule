@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Carte des manifestations aujourd'hui en France, en direct | ça brûle</title>
+<meta name="description" content="Carte en direct des manifestations, grèves, blocages et mobilisations en France aujourd'hui, ville par ville, d'après la presse locale. Recherchez votre ville, filtrez par thème. Mise à jour toutes les 10 minutes.">
+<link rel="canonical" href="https://oraclemarin.fr/cabrule/">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<meta name="theme-color" content="#0f1114">
+<meta name="geo.region" content="FR"><meta name="geo.placename" content="France"><meta http-equiv="content-language" content="fr">
+<meta property="og:type" content="website"><meta property="og:locale" content="fr_FR"><meta property="og:site_name" content="ça brûle">
+<meta property="og:title" content="Carte des manifestations aujourd'hui en France, en direct">
+<meta property="og:description" content="Où ça brûle aujourd'hui ? Manifestations, grèves, blocages : la carte en direct, ville par ville, d'après la presse.">
+<meta property="og:url" content="https://oraclemarin.fr/cabrule/">
+<meta property="og:image" content="https://oraclemarin.fr/cabrule/og.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Carte de France avec les villes mobilisées aujourd'hui">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Carte des manifestations aujourd'hui en France, en direct">
+<meta name="twitter:image" content="https://oraclemarin.fr/cabrule/og.png">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="alternate" type="text/plain" href="llms.txt" title="llms.txt">
+<!--LDJSON-->
+<link rel="stylesheet" href="lib/leaflet.css">
+<style>
+  :root{--bg:#0f1114;--panel:#171a1f;--line:#2a2f37;--fg:#e8eaed;--mute:#8b929c;--fire:#ff5a1f;--fire2:#ffb020}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,sans-serif;overscroll-behavior:none}
+  #app{display:grid;grid-template-columns:1fr 360px;height:100%}
+  #map{height:100%;background:#0b0d10;touch-action:none}
+  aside{display:flex;flex-direction:column;min-height:0;background:var(--panel);border-left:1px solid var(--line)}
+  header{padding:16px 16px 10px;cursor:default}
+  .grab{display:none}
+  h1{margin:0;font-size:26px;letter-spacing:-.5px}
+  h1 span{color:var(--fire)}
+  .sub{color:var(--mute);font-size:12px;margin-top:2px}
+  #scan{color:var(--fire2);min-height:1.4em}
+  .tabs{display:flex;gap:6px;padding:0 16px 10px}
+  .tabs button{flex:1;background:none;border:1px solid var(--line);color:var(--mute);padding:6px;border-radius:6px;cursor:pointer;font:inherit}
+  .tabs button.on{background:var(--fire);border-color:var(--fire);color:#fff}
+  #themes{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  #themes button{background:none;border:1px solid var(--line);color:var(--mute);padding:3px 9px;border-radius:99px;cursor:pointer;font:inherit;font-size:12px;white-space:nowrap}
+  #themes button.on{background:var(--fire);border-color:var(--fire);color:#fff}
+  #themes button i{font-style:normal;opacity:.7;margin-left:3px}
+  .tag{display:inline-block;font-size:10px;border:1px solid var(--line);border-radius:99px;padding:0 6px;margin-left:4px;color:var(--mute)}
+  #list{overflow:auto;flex:1;min-height:0}
+  .item{padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer}
+  .item:hover{background:#1d2128}
+  .item b{font-size:15px}
+  .item .meta{color:var(--mute);font-size:12px}
+  .item ul{margin:6px 0 0;padding-left:16px;color:#c9cdd3;font-size:13px;display:none}
+  .item.open ul{display:block}
+  .item a{color:inherit;text-decoration:none}.item a:hover{text-decoration:underline}
+  footer a{color:var(--fire2)}
+  footer{padding:10px 16px;border-top:1px solid var(--line);color:var(--mute);font-size:11px}
+  .dark-tiles{filter:invert(1) hue-rotate(180deg) brightness(.85) contrast(.9) saturate(.5)}
+  .pulse{border-radius:50%;background:radial-gradient(circle,var(--fire2),var(--fire) 55%,rgba(255,90,31,.15) 70%);
+    animation:p 2s ease-out infinite;box-shadow:0 0 14px var(--fire);pointer-events:none}
+  .leaflet-marker-icon{pointer-events:none!important}
+  @keyframes p{0%{transform:scale(.8);opacity:1}70%{transform:scale(1.15);opacity:.75}100%{transform:scale(.8);opacity:1}}
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--panel);color:var(--fg)}
+  .leaflet-popup-content{max-height:40vh;overflow:auto}
+  .leaflet-popup-content a{color:var(--fire2)}
+
+  #search{position:absolute;top:12px;left:56px;width:320px;max-width:calc(100% - 80px);z-index:1100}
+  #search input{width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--line);background:rgba(23,26,31,.96);color:var(--fg);font:inherit;font-size:15px;outline:none;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+  #search input:focus{border-color:var(--fire)}
+  #sres{margin-top:4px;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:none;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+  #sres div{padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--line)}
+  #sres div:last-child{border-bottom:0}
+  #sres div:hover,#sres div:active{background:#1d2128}
+  #sres small{color:var(--mute)}
+
+  #modes{position:absolute;top:12px;left:392px;z-index:1050;display:flex;gap:6px}
+  #modes button{background:rgba(23,26,31,.96);border:1px solid var(--line);color:var(--mute);padding:9px 13px;border-radius:99px;cursor:pointer;font:inherit;font-size:13px;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+  #modes button.on{color:#fff;border-color:transparent;background:var(--fire)}
+  #modes button[data-m=police].on{background:#4b7bff}
+  #modes button[data-m=feminicides].on{background:#9b4dff}
+  .pulse.police{background:radial-gradient(circle,#b9ccff,#4b7bff 55%,rgba(75,123,255,.15) 70%);box-shadow:0 0 14px #4b7bff}
+  .pulse.fem{background:radial-gradient(circle,#dcb8ff,#9b4dff 55%,rgba(155,77,255,.15) 70%);box-shadow:0 0 14px #9b4dff}
+  .banner{padding:12px 16px;border-bottom:1px solid var(--line);font-size:13px;color:#c9cdd3}
+  .banner p{margin:6px 0 0;color:var(--mute);font-size:12px}
+  .banner a{color:var(--fire2)}
+  .bars{display:flex;align-items:flex-end;gap:4px;height:44px;margin-top:10px}
+  .bars div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:9px;color:var(--mute)}
+  .bars i{display:block;width:100%;background:var(--bar,#4b7bff);border-radius:2px 2px 0 0;min-height:1px}
+  /* Mobile : carte plein écran + panneau coulissant (bottom sheet) */
+  @media(max-width:800px){
+    html,body{height:100dvh}
+    #app{display:block;position:relative;height:100dvh}
+    #map{position:absolute;inset:0;height:100%}
+    .leaflet-control-zoom{display:none}
+    #search{left:12px;right:12px;width:auto;max-width:none}
+    #modes{top:64px;left:12px;right:12px;overflow-x:auto;scrollbar-width:none}
+    #modes::-webkit-scrollbar{display:none}
+    .leaflet-top.leaflet-right{top:112px}
+    aside{position:absolute;left:0;right:0;bottom:0;height:68dvh;z-index:1000;border-left:0;border-top:1px solid var(--line);
+      border-radius:16px 16px 0 0;box-shadow:0 -6px 24px rgba(0,0,0,.45);transition:transform .25s ease;
+      transform:translateY(calc(100% - 84px - env(safe-area-inset-bottom)));padding-bottom:env(safe-area-inset-bottom)}
+    aside.open{transform:none}
+    header{padding:0 14px 8px;cursor:pointer;display:grid;grid-template-columns:1fr auto;align-items:center;column-gap:10px}
+    .grab{display:block;grid-column:1/-1;width:44px;height:5px;border-radius:5px;background:#3a414c;margin:8px auto 6px}
+    h1{font-size:20px}
+    .sub{margin-top:0}
+    #upd{grid-column:1/-1}
+    #scan{grid-column:1/-1;font-size:12px}
+    .chev{display:block;color:var(--mute);font-size:18px;transition:transform .25s}
+    aside.open .chev{transform:rotate(180deg)}
+    .tabs{padding:4px 14px 8px}
+    #themes{flex-wrap:nowrap;overflow-x:auto;padding:8px 14px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+    #themes::-webkit-scrollbar{display:none}
+    footer{display:none}
+    .leaflet-control-attribution{font-size:9px}
+    .tagline{display:none}
+  }
+  .chev{display:none}
+  .tagline{margin-top:0}
+  #about{border-top:1px solid var(--line)}
+  #about summary{padding:12px 16px;cursor:pointer;color:var(--mute);font-size:13px}
+  .aboutin{padding:0 16px 16px;color:#c9cdd3;font-size:13px}
+  .aboutin h2{font-size:15px;margin:6px 0}.aboutin h3{font-size:13px;margin:14px 0 4px;color:var(--fg)}.aboutin p{margin:4px 0}
+  .aboutin a{color:var(--fire2)}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="map"></div>
+  <div id="search"><input id="q" type="search" placeholder="Rechercher une ville…" autocomplete="off" enterkeyhint="search"><div id="sres"></div></div>
+  <div id="modes"><button data-m="live" class="on">En direct</button><button data-m="police">Décès police</button><button data-m="feminicides">Féminicides</button></div>
+  <aside id="sheet">
+    <header id="head">
+      <span class="grab"></span>
+      <h1>ça <span>brûle</span></h1><span class="chev">▲</span>
+      <div class="sub tagline">Carte des manifestations aujourd'hui en France</div>
+      <div class="sub" id="upd">chargement…</div>
+      <div class="sub" id="scan"></div>
+    </header>
+    <div class="tabs" id="tabs">
+      <button data-h="3">3 h</button><button data-h="12">12 h</button><button data-h="24" class="on">24 h</button>
+    </div>
+    <div id="themes"></div>
+    <div id="list"><div id="items"></div><!--ABOUT--></div>
+    <footer>Carte indicative construite à partir des titres de la presse en ligne. Une mention n'est pas une confirmation : vérifiez à la source. <a href="sources">Sources et méthode</a></footer>
+  </aside>
+</div>
+<script src="lib/leaflet.js"></script>
+<script>
+const mobile=()=>matchMedia('(max-width:800px)').matches;
+const map = L.map('map',{zoomControl:true,tap:false,maxZoom:17}).setView([46.6,2.4],6);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  {attribution:'© OpenStreetMap',maxZoom:17,className:'dark-tiles'}).addTo(map);
+if(mobile())map.attributionControl.setPosition('topright');
+const layer = L.layerGroup().addTo(map);
+const TH={lyceens:'Lycéens / étudiants',agri:'Agriculteurs',travail:'Travail / grèves',transports:'Transports',sante:'Santé',
+  ecologie:'Écologie',international:'International',politique:'Budget / politique',violences:'Heurts / violences',securite_logement:'Logement / quartiers',autre:'Autre'};
+let data=[], hours=24, markers={}, sel=new Set(), shown=[];
+const lk=a=>a.link||('go/'+a.h);  // lien direct (add-ons) ou redirection courte /go/<id> (presse)
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ago=ts=>{const m=Math.round((Date.now()/1000-ts)/60);return m<60?`il y a ${m} min`:`il y a ${Math.round(m/60)} h`};
+const sheet=document.getElementById('sheet');
+const setSheet=o=>{sheet.classList.toggle('open',o);setTimeout(()=>map.invalidateSize(),300)};
+document.getElementById('head').onclick=()=>{if(mobile())setSheet(!sheet.classList.contains('open'))};
+
+let mode='live', ds={};
+const zfNow=()=>Math.min(1,0.35+(map.getZoom()-5)*0.17)*(mobile()?0.8:1);  // bulles plus petites quand on dézoome
+const MONTHS=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+
+function draw(ev,cls,unit,lastFmt,banner){
+  const zf=zfNow(); layer.clearLayers(); markers={}; shown=[];
+  ev.forEach(e=>{
+    const size=Math.round(Math.min(60,16+e.n*(cls?11:7))*zf);
+    // marqueur non interactif : un pincement dessus zoome la carte au lieu de « prendre » la ville
+    const m=L.marker([e.lat,e.lon],{interactive:false,keyboard:false,icon:L.divIcon({className:'',iconSize:[size,size],iconAnchor:[size/2,size/2],
+      html:`<div class="pulse ${cls}" style="width:${size}px;height:${size}px"></div>`})}).addTo(layer);
+    markers[e.nom+e.dep]=m; shown.push({e,m,size,unit});
+  });
+  document.getElementById('items').innerHTML=(banner||'')+(ev.map(e=>`
+    <div class="item" data-k="${e.nom}${e.dep}">
+      <b>${esc(e.nom)}</b> <span class="meta">· ${e.n} ${unit[e.n>1?1:0]} · ${lastFmt(e)}</span>
+      <ul>${e.articles.map(a=>`<li><a href="${lk(a)}" target="_blank" rel="noopener nofollow">${esc(a.title)}</a> <span class="meta">${esc(a.src||'')}</span>${(a.themes||[]).map(t=>`<span class="tag">${TH[t]||t}</span>`).join('')}</li>`).join('')}</ul>
+    </div>`).join('')||'<div class="item meta">Aucun signal sur cette période.</div>');
+  document.querySelectorAll('.item[data-k]').forEach(el=>el.onclick=ev_=>{
+    if(ev_.target.closest('a'))return;
+    const s=shown.find(x=>x.e.nom+x.e.dep===el.dataset.k); if(!s)return;
+    if(mobile()){setSheet(false);setTimeout(()=>{map.once('moveend',()=>setTimeout(()=>openPop(s.e),150));map.flyTo([s.e.lat,s.e.lon],Math.max(map.getZoom(),9))},350)}
+    else{el.classList.toggle('open');map.once('moveend',()=>setTimeout(()=>openPop(s.e),150));map.flyTo([s.e.lat,s.e.lon],9)}});
+}
+
+function render(){
+  const cutoff=Date.now()/1000-hours*3600;
+  const inWin=data.map(e=>({...e,articles:e.articles.filter(x=>x.ts>=cutoff)})).filter(e=>e.articles.length);
+  const counts={}; inWin.forEach(e=>e.articles.forEach(a=>(a.themes||['autre']).forEach(t=>counts[t]=(counts[t]||0)+1)));
+  document.getElementById('themes').innerHTML=Object.keys(TH).filter(t=>counts[t]).sort((a,b)=>counts[b]-counts[a])
+    .map(t=>`<button data-t="${t}" class="${sel.has(t)?'on':''}">${TH[t]}<i>${counts[t]}</i></button>`).join('');
+  const ev=inWin.map(e=>{const a=sel.size?e.articles.filter(x=>(x.themes||['autre']).some(t=>sel.has(t))):e.articles;
+      return a.length&&{...e,articles:a,n:a.length,last:a[0].ts}})
+    .filter(Boolean).sort((a,b)=>b.n-a.n||b.last-a.last);
+  draw(ev,'',['article','articles'],e=>ago(e.last),'');
+}
+
+// Add-ons : jeux de données structurés (mis à jour 1 fois par jour côté serveur)
+const dd=ts=>new Date(ts*1000).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'});
+function renderDataset(d){
+  const items=d.items, byPlace={};
+  items.filter(i=>i.lat!=null).forEach(i=>{
+    const k=i.place+i.dep, e=byPlace[k]||(byPlace[k]={nom:i.place,dep:i.dep,lat:i.lat,lon:i.lon,articles:[],n:0,last:0});
+    const label=(d.name==='police'?`${dd(i.ts)} · ${i.age?i.age+' · ':''}`:'')+i.text;
+    e.articles.push({title:label.length>240?label.slice(0,237)+'…':label,link:i.url,src:'',ts:i.ts}); e.n++; e.last=Math.max(e.last,i.ts);
+  });
+  const ev=Object.values(byPlace).sort((a,b)=>b.n-a.n||b.last-a.last);
+  const perMonth=Array(12).fill(0); items.forEach(i=>perMonth[new Date(i.ts*1000).getMonth()]++);
+  const upto=new Date().getMonth(), mx=Math.max(1,...perMonth.slice(0,upto+1));
+  const col=d.name==='police'?'#4b7bff':'#9b4dff';
+  const banner=`<div class="banner"><b>${esc(d.title)}</b> depuis le 1er janvier ${d.year} : <b>${d.total}</b> cas${d.unlocated?` (dont ${d.unlocated} non localisé${d.unlocated>1?'s':''})`:''}
+    <div class="bars" style="--bar:${col}">${perMonth.slice(0,upto+1).map((n,k)=>`<div title="${MONTHS[k]} : ${n}"><i style="height:${Math.round(n/mx*30)+1}px"></i>${MONTHS[k][0].toUpperCase()}</div>`).join('')}</div>
+    <p>${esc(d.note)}</p>
+    <p>Source : <a href="${d.url}" target="_blank" rel="noopener">${esc(d.source)}</a> · actualisé ${d.updated?ago(d.updated):'—'} (1 fois par jour)</p></div>`;
+  document.getElementById('upd').textContent=`${d.title} · ${d.total} cas en ${d.year}`;
+  draw(ev,d.name==='police'?'police':'fem',['cas','cas'],e=>dd(e.last),banner);
+}
+const redraw=()=>mode==='live'?render():(ds[mode]&&renderDataset(ds[mode].d));
+async function setMode(m){
+  mode=m; document.querySelectorAll('#modes button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  document.getElementById('tabs').style.display=document.getElementById('themes').style.display=(m==='live'?'':'none');
+  document.getElementById('scan').textContent=''; map.closePopup();
+  if(m==='live'){updHeader();render();return}
+  if(!ds[m]||Date.now()-ds[m].t>600000){
+    document.getElementById('upd').textContent='chargement…';
+    try{const d=await (await fetch('api/dataset?name='+m)).json(); ds[m]={d,t:Date.now()}}
+    catch(e){document.getElementById('upd').textContent='erreur de chargement';return}
+  }
+  if(mode===m)renderDataset(ds[m].d);
+}
+document.getElementById('modes').onclick=e=>{const b=e.target.closest('button');if(b&&b.dataset.m!==mode)setMode(b.dataset.m)};
+function popup(e){return `<b>${esc(e.nom)}</b> <span class="meta">· ${e.n} article${e.n>1?'s':''}</span><br>`+e.articles.slice(0,5).map(a=>
+  `<a href="${lk(a)}" target="_blank" rel="noopener nofollow">${esc(a.title)}</a>`).join('<hr style="border:0;border-top:1px solid var(--line);margin:6px 0">')}
+function openPop(e){L.popup({autoPan:true,autoPanPadding:[16,16],maxWidth:Math.min(300,innerWidth-56)}).setLatLng([e.lat,e.lon]).setContent(popup(e)).openOn(map)}
+
+// Un simple tap sélectionne le point le plus proche (un pincement ou un glissement ne déclenche pas de « click »)
+map.on('click',ev=>{
+  const p=map.latLngToContainerPoint(ev.latlng); let best=null,bd=1e9;
+  shown.forEach(s=>{const q=map.latLngToContainerPoint([s.e.lat,s.e.lon]);const d=p.distanceTo(q);
+    if(d<Math.max(26,s.size/2+10)&&d<bd){bd=d;best=s}});
+  if(best)openPop(best.e);
+});
+
+let lastUpdated=null, throttled=null;
+function updHeader(){document.getElementById('upd').textContent=(lastUpdated?`${data.length} lieux · mis à jour ${ago(lastUpdated)}`:'première collecte en cours…')+(throttled?' · ⚠ une source est ralentie (les autres restent actives)':'')}
+async function load(){
+  try{
+    const r=await (await fetch('api/events?v=2')).json();
+    data=r.events; lastUpdated=r.updated; throttled=r.throttled_until;
+    if(mode==='live'){updHeader();render()}
+  }catch(e){document.getElementById('upd').textContent='erreur de chargement'}
+}
+document.getElementById('themes').onclick=e=>{
+  const t=e.target.closest('button'); if(!t)return; const k=t.dataset.t; sel.has(k)?sel.delete(k):sel.add(k); render()};
+document.getElementById('tabs').onclick=e=>{
+  if(e.target.dataset.h){hours=+e.target.dataset.h;
+    document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b===e.target));render()}};
+
+// Recherche d'une ville : saisie -> suggestions -> la carte s'y place et la commune est interrogée immédiatement
+const qi=document.getElementById('q'), sres=document.getElementById('sres'); let qTimer=null, qSeq=0;
+qi.addEventListener('input',()=>{clearTimeout(qTimer);qTimer=setTimeout(async()=>{
+  const q=qi.value.trim(); if(q.length<2){sres.style.display='none';return}
+  const seq=++qSeq; const r=await (await fetch('api/search?q='+encodeURIComponent(q))).json();
+  if(seq!==qSeq||!Array.isArray(r))return;
+  sres.innerHTML=r.map(c=>`<div data-c='${JSON.stringify(c).replace(/'/g,'&#39;')}'>${esc(c.nom)} <small>${c.dep||''} · ${c.pop.toLocaleString('fr-FR')} hab.</small></div>`).join('')||'<div><small>Aucune commune trouvée</small></div>';
+  sres.style.display='block'},200)});
+async function goCity(c){
+  sres.style.display='none'; qi.value=c.nom; qi.blur();
+  if(mode!=='live')await setMode('live');
+  if(mobile())setSheet(false);
+  const z=c.pop>20000?11:c.pop>3000?12:13;
+  map.flyTo([c.lat,c.lon],z); say(`Recherche pour ${c.nom}…`,true);
+  try{
+    const r=await (await fetch('api/city?code='+encodeURIComponent(c.code))).json();
+    if(r.busy){say('Serveur occupé, réessayez dans quelques secondes');return}
+    if(r.limited){say('Limite de requêtes atteinte : données en cache affichées');}
+    await load();
+    const s=shown.find(x=>x.e.nom===c.nom&&x.e.dep===c.dep);
+    if(s){say('');setTimeout(()=>openPop(s.e),900)}
+    else say(r.via==='cache'?`Aucun signal pour ${c.nom} dans les flux déjà collectés (moteurs de recherche momentanément limités)`:`Aucun signal pour ${c.nom} ces dernières 24 h`);
+  }catch(e){say('Erreur de recherche')}
+}
+sres.addEventListener('click',ev=>{const d=ev.target.closest('div[data-c]'); if(d)goCity(JSON.parse(d.dataset.c))});
+// liens profonds : ?ville=CODE_INSEE (pages ville) ou ?mode=police|feminicides (pages add-ons)
+const qp=new URLSearchParams(location.search);
+(async()=>{
+  if(['police','feminicides'].includes(qp.get('mode')))return setMode(qp.get('mode'));
+  if(qp.get('ville')){
+    try{const r=await (await fetch('api/city?code='+encodeURIComponent(qp.get('ville')))).json(); if(r.commune){await load();goCity(r.commune)}}catch(e){}
+  }
+})();
+document.addEventListener('click',e=>{if(!e.target.closest('#search'))sres.style.display='none'});
+
+// Recherche locale séquencée : plus on zoome, plus on descend vers les petites communes (seuil côté serveur)
+let areaRetry=0, areaTimer=null, areaBusy=false, areaDirty=false, msgTimer=null;
+function say(t,keep){const st=document.getElementById('scan');st.textContent=t;clearTimeout(msgTimer);if(!keep)msgTimer=setTimeout(()=>st.textContent='',8000)}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function scanArea(){
+  if(map.getZoom()<10){say('Zoomez sur votre secteur ou cherchez une ville pour lancer la recherche locale');return}
+  if(areaBusy){areaDirty=true;return}
+  areaBusy=true; areaDirty=false; let done=0, last=null; say('Recherche locale…',true);
+  try{
+    for(let i=0;i<4;i++){
+      const b=map.getBounds();
+      const r=await (await fetch(`api/area?south=${b.getSouth()}&west=${b.getWest()}&north=${b.getNorth()}&east=${b.getEast()}&zoom=${map.getZoom()}`)).json();
+      last=r;
+      if(r.error){say('Zone trop large : zoomez un peu plus');break}
+      if(r.busy){say('Serveur occupé par une autre recherche, nouvel essai…',true);areaRetry++;if(areaRetry<=4)setTimeout(()=>{areaBusy=false;scanArea()},3500);break}
+      if(r.limited){say('Limite de requêtes atteinte (protection) : réessayez dans quelques minutes');break}
+      if(!r.queried)break;
+      areaRetry=0; done+=r.queried; await load();
+      if(!r.remaining)break;
+      say(`Recherche locale… ${done} communes interrogées, ${r.remaining} restantes`,true);
+      await sleep(700);
+    }
+    if(last&&!last.error&&!last.busy&&!last.limited){
+      say(done?`✓ ${done} communes interrogées`+(last.remaining?` · ${last.remaining} restantes : bougez ou zoomez`:' · zone à jour'):'✓ zone déjà à jour (données de moins de 15 min)');
+    }
+  }catch(e){say('Erreur de recherche locale')}
+  areaBusy=false; if(areaDirty)scanArea();
+}
+map.on('zoomend',()=>redraw());
+map.on('moveend',()=>{if(mode!=='live')return;clearTimeout(areaTimer);areaTimer=setTimeout(scanArea,900)});
+load(); setInterval(load,60000);
+setTimeout(load,20000);
+</script>
+</body>
+</html>
